@@ -22,7 +22,8 @@ import logging
 
 TUYA_LOGGER.setLevel(logging.DEBUG)
 
-(on, w, mA, V, err) = tuyapower.deviceInfo(DEVICE_ID,PLUGIP,PLUGKEY,PLUGVERS)
+#aqui guardamos el estado, lo vatios, miliamperios, voltaje, y si hay algun error.        
+
 
 
 flag = True
@@ -31,5 +32,7 @@ while True:
     flag = not flag
     commands = {'commands': [{'code': 'switch_1', 'value': flag}]}
     openapi.post('/v1.0/iot-03/devices/{}/commands'.format(DEVICE_ID), commands)
+    (on, w, mA, V, err) = tuyapower.deviceInfo(DEVICE_ID,PLUGIP,PLUGKEY,PLUGVERS)
     tuyapower.devicePrint(DEVICE_ID, PLUGIP, PLUGKEY, PLUGVERS)
-    print(" state=%s, W=%s, mA=%s, V=%s [%s]"%(on,w,mA,V,err))
+    
+    print(" state=%s, W=%s, mA=%s, V=%s [%s]"%(on,w,mA,V,err))  
