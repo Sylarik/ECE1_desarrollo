@@ -1,58 +1,75 @@
 from env import ENDPOINT, ACCESS_ID, ACCESS_KEY, PLUGIP, PLUGKEY, PLUGVERS, USERNAME, PASSWORD, DEVICE_ID
 import logging
-import time
 import keyboard
-import sys
 from tuya_iot import (
     TuyaOpenAPI,
     AuthType,
-    TuyaOpenMQ,
-    TuyaDeviceManager,
-    TuyaHomeManager,
-    TuyaDeviceListener,
-    TuyaDevice,
-    TuyaTokenInfo,
-    TUYA_LOGGER,
-    device
 )
 import tuyapower
+from firebase_config import inicializar_firebase
+import time
 
-openapi = TuyaOpenAPI(ENDPOINT, ACCESS_ID, ACCESS_KEY,AuthType.CUSTOM)
+# Inicializar Firebase
+db = inicializar_firebase()
+
+# Conectar a la API de Tuya
+openapi = TuyaOpenAPI(ENDPOINT, ACCESS_ID, ACCESS_KEY, AuthType.CUSTOM)
 openapi.connect(USERNAME, PASSWORD)
 
-import logging
+logging.basicConfig(level=logging.DEBUG)
 
-TUYA_LOGGER.setLevel(logging.DEBUG)
-
-#aqui guardamos el estado, lo vatios, miliamperios, voltaje, y si hay algun error.        
-
-
-print("Presiona la tecla 'espacio' para continuar o 'q' para salir.")
+# Variable de control
 flag = True
+
+def guardar_datos_firebase(on, w, mA, V):
+    """Guardar datos en Firestore."""
+    coleccion = db.collection('consumo_energetico')
+    datos = {
+        "estado": on,
+        "consumo_w": w,
+        "corriente_mA": mA,
+        "voltaje_V": V,
+        "timestamp": time.strftime('%Y-%m-%d %H:%M:%S')  # Fecha y hora actual
+    }
+    coleccion.add(datos)
+    print(f"Datos guardados en Firebase: {datos}")
+
+def obtener_todos_los_datos():
+    """Obtiene todos los documentos de la colección consumo_energetico."""
+    coleccion = db.collection('consumo_energetico')
+    
+    # Recuperar todos los documentos de la colección
+    documentos = coleccion.stream()
+    
+    print("Datos obtenidos de la base de datos:")
+    for doc in documentos:
+        print(f"ID: {doc.id}, Datos: {doc.to_dict()}")
+
 
 def toggle_flag():
     """
-    Alterna el estado del flag y ejecuta el comando correspondiente.
+    Alterna el estado del flag y envía comandos al dispositivo.
+    También guarda los datos en Firebase.
     """
     global flag
     flag = not flag  # Alterna el estado del flag
-    
-    # Comando para enviar el nuevo estado al dispositivo
+
+    # Enviar comando para cambiar el estado
     commands = {'commands': [{'code': 'switch_1', 'value': flag}]}
     openapi.post(f'/v1.0/iot-03/devices/{DEVICE_ID}/commands', commands)
 
-    # Obtiene la información actual del dispositivo
+    # Obtener datos del enchufe inteligente
     on, w, mA, V, err = tuyapower.deviceInfo(DEVICE_ID, PLUGIP, PLUGKEY, PLUGVERS)
-    tuyapower.devicePrint(DEVICE_ID, PLUGIP, PLUGKEY, PLUGVERS)
 
-    # Imprime el estado actual
-    print(f" state={on}, W={w}, mA={mA}, V={V} [{err}]")
-    print(w)
-    print(w)
-    print(w)
-    print(w)
+    # Imprimir datos en consola
+    print(f"Estado: {on}, Consumo (W): {w}, Corriente (mA): {mA}, Voltaje (V): {V} [Error: {err}]")
+
+    # Guardar datos en Firebase
+    guardar_datos_firebase(on, w, mA, V)
+    obtener_todos_los_datos()
 
 def exit_program():
+    """Salir del programa."""
     print("Saliendo del programa...")
     global running
     running = False  # Detiene el bucle principal
@@ -60,13 +77,13 @@ def exit_program():
 # Indica si el programa está en ejecución
 running = True
 
-# Asigna las teclas a las funciones
+# Asignar teclas para funciones
 keyboard.add_hotkey("space", toggle_flag)  # Presiona 'espacio' para alternar el estado
 keyboard.add_hotkey("q", exit_program)    # Presiona 'q' para salir del programa
 
-# Mensaje inicial para el usuario
+# Mensaje inicial
 print("Presiona 'espacio' para alternar el estado del enchufe o 'q' para salir del programa.")
 
 # Bucle principal
 while running:
-    pass 
+    pass
