@@ -47,11 +47,12 @@ def toggle_flag():
 
     # Imprime el estado actual
     print(f" state={on}, W={w}, mA={mA}, V={V} [{err}]")
+    print(w)
+    print(w)
+    print(w)
+    print(w)
 
 def exit_program():
-    """
-    Sale del programa limpiamente.
-    """
     print("Saliendo del programa...")
     global running
     running = False  # Detiene el bucle principal
