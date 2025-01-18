@@ -19,7 +19,10 @@ openapi.connect(USERNAME, PASSWORD)
 logging.basicConfig(level=logging.DEBUG)
 
 # Variable de control
-flag = True
+flag = False
+
+# Obtener datos del enchufe inteligente
+on, w, mA, V, err = tuyapower.deviceInfo(DEVICE_ID, PLUGIP, PLUGKEY, PLUGVERS)
 
 def guardar_datos_firebase(on, w, mA, V):
     """Guardar datos en Firestore."""
@@ -34,6 +37,7 @@ def guardar_datos_firebase(on, w, mA, V):
     coleccion.add(datos)
     print(f"Datos guardados en Firebase: {datos}")
 
+
 def obtener_todos_los_datos():
     """Obtiene todos los documentos de la colección consumo_energetico."""
     coleccion = db.collection('consumo_energetico')
@@ -46,10 +50,9 @@ def obtener_todos_los_datos():
         print(f"ID: {doc.id}, Datos: {doc.to_dict()}")
 
 
-def toggle_flag():
+def toggle_state():
     """
-    Alterna el estado del flag y envía comandos al dispositivo.
-    También guarda los datos en Firebase.
+    Alterna el estado del flag y envía comandos al dispositivo para encender/apagar.
     """
     global flag
     flag = not flag  # Alterna el estado del flag
@@ -58,15 +61,8 @@ def toggle_flag():
     commands = {'commands': [{'code': 'switch_1', 'value': flag}]}
     openapi.post(f'/v1.0/iot-03/devices/{DEVICE_ID}/commands', commands)
 
-    # Obtener datos del enchufe inteligente
-    on, w, mA, V, err = tuyapower.deviceInfo(DEVICE_ID, PLUGIP, PLUGKEY, PLUGVERS)
+    print(f"El estado del enchufe se ha cambiado a: {'Encendido' if flag else 'Apagado'}")
 
-    # Imprimir datos en consola
-    print(f"Estado: {on}, Consumo (W): {w}, Corriente (mA): {mA}, Voltaje (V): {V} [Error: {err}]")
-
-    # Guardar datos en Firebase
-    guardar_datos_firebase(on, w, mA, V)
-    obtener_todos_los_datos()
 
 def exit_program():
     """Salir del programa."""
@@ -78,8 +74,9 @@ def exit_program():
 running = True
 
 # Asignar teclas para funciones
-keyboard.add_hotkey("space", toggle_flag)  # Presiona 'espacio' para alternar el estado
+keyboard.add_hotkey("space", toggle_state)  # Presiona 'espacio' para alternar el estado
 keyboard.add_hotkey("q", exit_program)    # Presiona 'q' para salir del programa
+keyboard.add_hotkey("g", guardar_datos_firebase(on, w, mA, V))
 
 # Mensaje inicial
 print("Presiona 'espacio' para alternar el estado del enchufe o 'q' para salir del programa.")
