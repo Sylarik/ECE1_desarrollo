@@ -37,17 +37,50 @@ def guardar_datos_firebase(on, w, mA, V):
     coleccion.add(datos)
     print(f"Datos guardados en Firebase: {datos}")
 
+def obtener_datos_por_intervalo(coleccion, fecha_inicio, fecha_fin):
+    """
+    Obtiene documentos de una colección en Firestore dentro de un intervalo de tiempo.
+    """
+    coleccion_ref = db.collection('consumo_energetico')
+    #documentos = coleccion_ref.where("timestamp", ">=", "2025-01-24").where("timestamp", "<=", "2025-01-25").stream()
+    # Filtrar datos (usando strings si el timestamp es una cadena)
+    documentos = coleccion_ref.where("timestamp", ">=", fecha_inicio.strftime("%Y-%m-%d")) \
+                               .where("timestamp", "<=", fecha_fin.strftime("%Y-%m-%d")).stream()
+    print(documentos)
+    datos = [doc.to_dict() for doc in documentos]
+    return datos
+
+
 
 def obtener_todos_los_datos():
     """Obtiene todos los documentos de la colección consumo_energetico."""
     coleccion = db.collection('consumo_energetico')
     
     # Recuperar todos los documentos de la colección
-    documentos = coleccion.stream()
+    documentos = coleccion
     
     print("Datos obtenidos de la base de datos:")
     for doc in documentos:
-        print(f"ID: {doc.id}, Datos: {doc.to_dict()}")
+        #print(f"ID: {doc.id}, Datos: {doc.to_dict()}")
+        print(f"vatios: {doc.consumo_w}")
+
+
+def obtener_datos_voltaje():
+    """
+    Recupera los valores de voltaje de la base de datos Firestore.
+    """
+    coleccion = db.collection('consumo_energetico')
+    
+    # Recuperar todos los documentos
+    documentos = coleccion.stream()
+    
+    vatios = []
+    for doc in documentos:
+        datos = doc.to_dict()
+        if "consumo_w" in datos:
+            vatios.append(datos["consumo_w"])
+    
+    return vatios
 
 
 def toggle_state():
@@ -76,11 +109,14 @@ running = True
 # Asignar teclas para funciones
 keyboard.add_hotkey("space", toggle_state)  # Presiona 'espacio' para alternar el estado
 keyboard.add_hotkey("q", exit_program)    # Presiona 'q' para salir del programa
-keyboard.add_hotkey("g", guardar_datos_firebase(on, w, mA, V))
+keyboard.add_hotkey("g", lambda: guardar_datos_firebase(on, w, mA, V)) # Usar lambda para pasar parámetros
+keyboard.add_hotkey("d", obtener_todos_los_datos)  # Presiona 'espacio' para alternar el estado
 
 # Mensaje inicial
 print("Presiona 'espacio' para alternar el estado del enchufe o 'q' para salir del programa.")
 
+'''
 # Bucle principal
 while running:
     pass
+'''
