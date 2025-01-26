@@ -20,7 +20,7 @@ def guardar_datos_firebase():
     print(f"Estado: {on}, Consumo (W): {w}, Corriente (mA): {mA}, Voltaje (V): {V} [Error: {err}]")
 
     # Guardar datos en Firebase
-    coleccion = db.collection('consumo_energetico2')    #Si no existe la tabla la crea
+    coleccion = db.collection('consumo_energetico')    #Si no existe la tabla la crea
     datos = {
         "estado": on,
         "consumo_w": w,

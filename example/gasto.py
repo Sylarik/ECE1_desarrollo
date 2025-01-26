@@ -2,6 +2,9 @@ import time
 import requests
 from firebase_config import inicializar_firebase
 
+ESIOS_API_KEY = '78afc97a1d7ebee5e4acaf9b67c7c1e83164c9f515853c0f78f066bbbfd31712'
+
+
 def obtener_precio_actual_esios(token):
     """
     Obtiene el precio actual del mercado eléctrico en €/kWh desde la API de ESIOS.
@@ -10,7 +13,7 @@ def obtener_precio_actual_esios(token):
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": f"Token token={token}"  # Sustituye {token} por tu token personal
+        'x-api-key': ESIOS_API_KEY  # Sustituye {token} por tu token personal
     }
     
     response = requests.get(url, headers=headers)
@@ -69,6 +72,6 @@ def calcular_gasto_total(token):
 
 # Ejecutar el programa
 if __name__ == "__main__":
-    TOKEN_ESIOS = "TU_TOKEN_DE_ESIOS_AQUÍ"  # Sustituye por tu token de ESIOS
+    TOKEN_ESIOS = "78afc97a1d7ebee5e4acaf9b67c7c1e83164c9f515853c0f78f066bbbfd31712"  # Sustituye por tu token de ESIOS
 
     calcular_gasto_total(TOKEN_ESIOS)
