@@ -1,4 +1,4 @@
-from env import ENDPOINT, ACCESS_ID, ACCESS_KEY, PLUGIP, PLUGKEY, PLUGVERS, USERNAME, PASSWORD, DEVICE_ID
+#from env import ENDPOINT, ACCESS_ID, ACCESS_KEY, PLUGIP, PLUGKEY, PLUGVERS, USERNAME, PASSWORD, DEVICE_ID
 import logging
 import keyboard
 from tuya_iot import (
@@ -8,21 +8,56 @@ from tuya_iot import (
 import tuyapower
 from firebase_config import inicializar_firebase
 import time
+from dotenv import load_dotenv
+import os
+
+# Cargar variables del archivo .env
+load_dotenv()
+
+# Acceder a las variables de entorno
+ENDPOINT = os.getenv("ENDPOINT")
+ACCESS_ID = os.getenv("ACCESS_ID")
+ACCESS_KEY = os.getenv("ACCESS_KEY")
+PLUGIP = os.getenv("PLUGIP")
+PLUGKEY = os.getenv("PLUGKEY")
+PLUGVERS = os.getenv("PLUGVERS")
+USERNAME_TUYA = os.getenv("USERNAME_TUYA")
+PASSWORD = os.getenv("PASSWORD")
+DEVICE_ID = os.getenv("DEVICE_ID")
 
 # Inicializar Firebase
 db = inicializar_firebase()
 
 # Conectar a la API de Tuya
 openapi = TuyaOpenAPI(ENDPOINT, ACCESS_ID, ACCESS_KEY, AuthType.CUSTOM)
-openapi.connect(USERNAME, PASSWORD)
+openapi.connect(USERNAME_TUYA, PASSWORD)
 
 logging.basicConfig(level=logging.DEBUG)
 
 # Variable de control
 flag = False
 
+
+
 # Obtener datos del enchufe inteligente
 on, w, mA, V, err = tuyapower.deviceInfo(DEVICE_ID, PLUGIP, PLUGKEY, PLUGVERS)
+
+
+def toggle_state():
+    """
+    Alterna el estado del flag y envía comandos al dispositivo para encender/apagar.
+    """
+    global flag
+    flag = not flag  # Alterna el estado del flag
+
+    # Enviar comando para cambiar el estado
+    commands = {'commands': [{'code': 'switch_1', 'value': flag}]}
+    openapi.post(f'/v1.0/iot-03/devices/{DEVICE_ID}/commands', commands)
+
+    print(f"El estado del enchufe se ha cambiado a: {'Encendido' if flag else 'Apagado'}")
+
+
+
 
 def guardar_datos_firebase(on, w, mA, V):
     """Guardar datos en Firestore."""
@@ -69,7 +104,7 @@ def obtener_datos_voltaje():
     """
     Recupera los valores de voltaje de la base de datos Firestore.
     """
-    coleccion = db.collection('consumo_energetico')
+    coleccion = db.collection('consumo_energetico').stream()
     
     # Recuperar todos los documentos
     documentos = coleccion.stream()
@@ -83,18 +118,6 @@ def obtener_datos_voltaje():
     return vatios
 
 
-def toggle_state():
-    """
-    Alterna el estado del flag y envía comandos al dispositivo para encender/apagar.
-    """
-    global flag
-    flag = not flag  # Alterna el estado del flag
-
-    # Enviar comando para cambiar el estado
-    commands = {'commands': [{'code': 'switch_1', 'value': flag}]}
-    openapi.post(f'/v1.0/iot-03/devices/{DEVICE_ID}/commands', commands)
-
-    print(f"El estado del enchufe se ha cambiado a: {'Encendido' if flag else 'Apagado'}")
 
 
 def exit_program():

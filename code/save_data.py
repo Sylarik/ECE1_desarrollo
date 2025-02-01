@@ -1,10 +1,27 @@
-from env import ENDPOINT, ACCESS_ID, ACCESS_KEY, PLUGIP, PLUGKEY, PLUGVERS, USERNAME, PASSWORD, DEVICE_ID
+#from env import ENDPOINT, ACCESS_ID, ACCESS_KEY, PLUGIP, PLUGKEY, PLUGVERS, USERNAME, PASSWORD, DEVICE_ID
 from tuya_iot import TuyaOpenAPI, AuthType
 import tuyapower
 from firebase_config import inicializar_firebase
 import time
 
+from dotenv import load_dotenv
+import os
+
+# Cargar variables del archivo .env
+load_dotenv()
+
+# Acceder a las variables de entorno
+ENDPOINT = os.getenv("ENDPOINT")
+ACCESS_ID = os.getenv("ACCESS_ID")
+ACCESS_KEY = os.getenv("ACCESS_KEY")
+PLUGIP = os.getenv("PLUGIP")
+PLUGKEY = os.getenv("PLUGKEY")
+PLUGVERS = os.getenv("PLUGVERS")
+USERNAME_TUYA = os.getenv("USERNAME_TUYA")
+PASSWORD = os.getenv("PASSWORD")
+DEVICE_ID = os.getenv("DEVICE_ID")
 # Inicializar Firebase
+
 db = inicializar_firebase()
 
 # Conectar a la API de Tuya

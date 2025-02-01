@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import io  # Para manejar archivos en memoria
-from env import ESIOS_API_KEY
+#from env import ESIOS_API_KEY
 #from openai import OpenAI
 
 # API key y headers para ESIOS y OpenAI
@@ -14,7 +14,7 @@ def obtener_datos_esios(fecha_inicio, fecha_fin):
     headers = {
         'Accept': 'application/json; application/vnd.esios-api-v1+json',
         'Content-Type': 'application/json',
-        'x-api-key': ESIOS_API_KEY
+        #'x-api-key': ESIOS_API_KEY
     }
 
     url = f'https://api.esios.ree.es/indicators/600?start_date={fecha_inicio}&end_date={fecha_fin}'
