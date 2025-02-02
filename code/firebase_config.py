@@ -8,8 +8,8 @@ CREDENTAILS_JSON = os.getenv("CREDENTAILS_JSON")
 
 # Inicializar Firebase
 def inicializar_firebase():
-    """Conectar con Firebase usando el archivo de credenciales."""
+    
     if not firebase_admin._apps:
-        cred = credentials.Certificate(CREDENTAILS_JSON)  # Cambia la ruta
+        cred = credentials.Certificate(CREDENTAILS_JSON) 
         firebase_admin.initialize_app(cred)
     return firestore.client()

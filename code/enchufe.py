@@ -1,4 +1,5 @@
-#from env import ENDPOINT, ACCESS_ID, ACCESS_KEY, PLUGIP, PLUGKEY, PLUGVERS, USERNAME, PASSWORD, DEVICE_ID
+from env import ENDPOINT, ACCESS_ID, ACCESS_KEY, PLUGIP, PLUGKEY, PLUGVERS, USERNAME_TUYA, PASSWORD, DEVICE_ID
+
 import logging
 import keyboard
 from tuya_iot import (
@@ -8,60 +9,40 @@ from tuya_iot import (
 import tuyapower
 from firebase_config import inicializar_firebase
 import time
-from dotenv import load_dotenv
-import os
 
-# Cargar variables del archivo .env
-load_dotenv()
-
-# Acceder a las variables de entorno
-ENDPOINT = os.getenv("ENDPOINT")
-ACCESS_ID = os.getenv("ACCESS_ID")
-ACCESS_KEY = os.getenv("ACCESS_KEY")
-PLUGIP = os.getenv("PLUGIP")
-PLUGKEY = os.getenv("PLUGKEY")
-PLUGVERS = os.getenv("PLUGVERS")
-USERNAME_TUYA = os.getenv("USERNAME_TUYA")
-PASSWORD = os.getenv("PASSWORD")
-DEVICE_ID = os.getenv("DEVICE_ID")
-
-# Inicializar Firebase
+# Inicializar base de datos Firebase
 db = inicializar_firebase()
 
 # Conectar a la API de Tuya
 openapi = TuyaOpenAPI(ENDPOINT, ACCESS_ID, ACCESS_KEY, AuthType.CUSTOM)
 openapi.connect(USERNAME_TUYA, PASSWORD)
-
 logging.basicConfig(level=logging.DEBUG)
 
-# Variable de control
-flag = False
-
-
+# Variable de control de estado
+flag = True
 
 # Obtener datos del enchufe inteligente
 on, w, mA, V, err = tuyapower.deviceInfo(DEVICE_ID, PLUGIP, PLUGKEY, PLUGVERS)
 
 
+def estado():
+    return flag
+
+### FUNCIONALIDADES 
+# Cambiar estado encendido/apagado
 def toggle_state():
-    """
-    Alterna el estado del flag y envía comandos al dispositivo para encender/apagar.
-    """
     global flag
     flag = not flag  # Alterna el estado del flag
 
-    # Enviar comando para cambiar el estado
     commands = {'commands': [{'code': 'switch_1', 'value': flag}]}
     openapi.post(f'/v1.0/iot-03/devices/{DEVICE_ID}/commands', commands)
-
-    print(f"El estado del enchufe se ha cambiado a: {'Encendido' if flag else 'Apagado'}")
-
-
+    print(f"Estado del enchufe: {'Encendido' if flag else 'Apagado'}")
+    
 
 
+# Guardar dato actual en la base de datos
 def guardar_datos_firebase(on, w, mA, V):
-    """Guardar datos en Firestore."""
-    coleccion = db.collection('consumo_energetico')
+    coleccion = db.collection('consumo_energetico') #nombre de la coleccion (si no existe la crea)
     datos = {
         "estado": on,
         "consumo_w": w,
@@ -72,7 +53,9 @@ def guardar_datos_firebase(on, w, mA, V):
     coleccion.add(datos)
     print(f"Datos guardados en Firebase: {datos}")
 
-def obtener_datos_por_intervalo(coleccion, fecha_inicio, fecha_fin):
+
+# Obtener datos de la bbdd por intervalos 
+def obtener_datos_por_intervalo(fecha_inicio, fecha_fin):
     """
     Obtiene documentos de una colección en Firestore dentro de un intervalo de tiempo.
     """
@@ -83,27 +66,29 @@ def obtener_datos_por_intervalo(coleccion, fecha_inicio, fecha_fin):
                                .where("timestamp", "<=", fecha_fin.strftime("%Y-%m-%d")).stream()
     print(documentos)
     datos = [doc.to_dict() for doc in documentos]
+    print("DATOSSSS:",datos)
     return datos
 
 
-
+# Obtener todos los datos de la base de datos
 def obtener_todos_los_datos():
     """Obtiene todos los documentos de la colección consumo_energetico."""
     coleccion = db.collection('consumo_energetico')
     
     # Recuperar todos los documentos de la colección
-    documentos = coleccion
-    
+    documentos = coleccion.stream()  # O usar .get()
+
     print("Datos obtenidos de la base de datos:")
     for doc in documentos:
-        #print(f"ID: {doc.id}, Datos: {doc.to_dict()}")
-        print(f"vatios: {doc.consumo_w}")
+        data = doc.to_dict()  # Convertir el documento en diccionario
+        if data and "consumo_w" in data:
+            print(f"ID: {doc.id}, Vatios: {data['consumo_w']}")
+        else:
+            print(f"ID: {doc.id}, Datos incompletos o vacíos.")
+
 
 
 def obtener_datos_voltaje():
-    """
-    Recupera los valores de voltaje de la base de datos Firestore.
-    """
     coleccion = db.collection('consumo_energetico').stream()
     
     # Recuperar todos los documentos
@@ -118,10 +103,7 @@ def obtener_datos_voltaje():
     return vatios
 
 
-
-
 def exit_program():
-    """Salir del programa."""
     print("Saliendo del programa...")
     global running
     running = False  # Detiene el bucle principal
@@ -129,16 +111,14 @@ def exit_program():
 # Indica si el programa está en ejecución
 running = True
 
+'''
 # Asignar teclas para funciones
 keyboard.add_hotkey("space", toggle_state)  # Presiona 'espacio' para alternar el estado
 keyboard.add_hotkey("q", exit_program)    # Presiona 'q' para salir del programa
 keyboard.add_hotkey("g", lambda: guardar_datos_firebase(on, w, mA, V)) # Usar lambda para pasar parámetros
 keyboard.add_hotkey("d", obtener_todos_los_datos)  # Presiona 'espacio' para alternar el estado
 
-# Mensaje inicial
-print("Presiona 'espacio' para alternar el estado del enchufe o 'q' para salir del programa.")
 
-'''
 # Bucle principal
 while running:
     pass

@@ -1,59 +1,35 @@
 import streamlit as st
-from enchufe import toggle_state, obtener_datos_por_intervalo
+from enchufe import toggle_state, obtener_datos_por_intervalo, estado
+from gasto import calcular_gasto_total
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import pandas as pd
 
-# Título de la aplicación
-st.title("Mi primera aplicación con Streamlit")
+from env import ESIOS_API_KEY
 
-# Subtítulo
-st.header("¡Bienvenido!")
+st.title("Monitorizacion consumo energetico")
 
-# Texto introductorio
-st.write("Esta es una aplicación simple para mostrar cómo funciona Streamlit.")
-
-# Entrada de texto
-nombre = st.text_input("¿Cómo te llamas?", "")
-
-# Botón
-if st.button("Saludar"):
-    st.success(f"¡Hola, {nombre}! 👋")
-
-# Slider
-edad = st.slider("¿Cuál es tu edad?", 0, 100, 25)
-st.write(f"Tienes {edad} años.")
-
-######################################################33
-
+st.subheader("Control estado del enchufe: encendido/apagado")
 # Botón para encender el enchufe
-if st.button("Encender Enchufe"):
+if st.button("Enchufe"):
     toggle_state()
-    #st.write(resultado)
+    if estado():
+        st.write("encendido")
+    else:
+        st.write("apagado")
 
 
 # Título de la aplicación
-st.title("Gráficas con Intervalos de Tiempo desde Firebase")
-
-# Entradas de usuario
-coleccion = st.text_input("Ingresa el nombre de la colección en Firebase", "mi_coleccion")
-print("oigenwognognr",coleccion)
+st.subheader("Consumo energetico temporal")
+st.write("Selecciona el rango de fechas en el que quieres ver el consumo de tu dispositivo")
 # Selección de intervalo de tiempo
 fecha_inicio = st.date_input("Fecha de inicio")
 print(fecha_inicio)
 fecha_fin = st.date_input("Fecha de fin")
 
-'''
-# Conversión a formato datetime (Firestore requiere timestamps)
-fecha_inicio = datetime.combine(fecha_inicio, datetime.min.time())
-fecha_fin = datetime.combine(fecha_fin, datetime.max.time())
-'''
-
 fecha_inicio_str = fecha_inicio.strftime('%Y-%m-%d')
 fecha_fin_str = fecha_fin.strftime('%Y-%m-%d')
 
-# Columna a graficar
-columna = st.text_input("Ingresa el nombre de la columna a graficar", "valor")
 
 # Botón para obtener datos
 if st.button("Generar gráfica"):
@@ -61,7 +37,7 @@ if st.button("Generar gráfica"):
         st.error("La fecha de inicio no puede ser mayor que la fecha de fin")
     else:
         # Obtener datos de Firebase
-        datos = obtener_datos_por_intervalo(coleccion, fecha_inicio, fecha_fin)
+        datos = obtener_datos_por_intervalo(fecha_inicio, fecha_fin)
         print(datos)
 
         if datos:
@@ -86,14 +62,15 @@ if st.button("Generar gráfica"):
             # Eliminar la columna 'diff' para limpiar el DataFrame
             df.drop(columns=['diff'], inplace=True)
 
-            # Mostrar los datos procesados para depuración
-            st.write("Datos procesados con huecos:")
-            st.write(df)
+
 
             # Crear la gráfica con st.line_chart
             st.line_chart(
                 data=df.set_index('timestamp')['consumo_w'],  # Usar 'timestamp' como índice
                 use_container_width=True
             )
+
+            gasto_total = calcular_gasto_total(ESIOS_API_KEY, fecha_inicio, fecha_fin)
+            st.write("Gasto en este intervalo:", gasto_total)
         else:
             st.error("No se encontraron datos en el intervalo seleccionado.")
